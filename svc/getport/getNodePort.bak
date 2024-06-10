@@ -1,0 +1,130 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
+	//v1 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+type ServicePorts struct {
+	serviceName string
+	servicePort []int32
+}
+type ServiceList struct {
+	namespace string
+	service   []ServicePorts
+}
+
+type NodePortsList struct {
+	nodePortList []ServiceList
+}
+
+type K8sClient struct {
+	client *kubernetes.Clientset
+}
+
+func GetClient(token string) (*K8sClient, error) {
+	// 通过配置文件创建Kubernetes客户端
+	config, err := clientcmd.BuildConfigFromFlags("", token)
+	if err != nil {
+		//fmt.Println(err.Error())
+		return nil, err
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		//fmt.Println(err.Error())
+		return nil, err
+	}
+
+	return &K8sClient{client}, nil
+
+}
+
+func GetNameSpaces(client *K8sClient, token string) ([]string, error) {
+	namespacelist := []string{}
+	// 通过配置文件创建Kubernetes客户端
+	/*
+		config, err := clientcmd.BuildConfigFromFlags("", token)
+		if err != nil {
+			//fmt.Println(err.Error())
+			return nil, err
+		}
+
+		client, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			//fmt.Println(err.Error())
+			return nil, err
+		}
+	*/
+	// 查询所有的 Namespace
+	namespaces, err := client.client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		//fmt.Println(err.Error())
+		return nil, err
+	}
+	for _, ns := range namespaces.Items {
+		namespacelist = append(namespacelist, ns.Name)
+
+	}
+	return namespacelist, err
+}
+func GetNodePort(client *K8sClient, namespace []string) (NodePortsList, error) {
+	NodePortsList := NodePortsList{}
+	for _, ns := range namespace {
+		ServiceList := ServiceList{}
+		ServiceList.namespace = string(ns)
+		// 列出 Namespace 下的所有 Service
+		services, err := client.client.CoreV1().Services(string(ns)).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			//fmt.Println(err.Error())
+			return NodePortsList, err
+		}
+		for _, svc := range services.Items {
+			ServicePorts := ServicePorts{}
+			ServicePorts.serviceName = svc.Name
+			if svc.Spec.Type == "NodePort" {
+				for _, port := range svc.Spec.Ports {
+					ServicePorts.servicePort = append(ServicePorts.servicePort, port.NodePort)
+				}
+				ServiceList.service = append(ServiceList.service, ServicePorts)
+			}
+			//if ServicePorts.servicePort == nil {
+			//	continue
+			//}
+			//ServiceList.service = append(ServiceList.service, ServicePorts)
+		}
+		if ServiceList.service != nil {
+			NodePortsList.nodePortList = append(NodePortsList.nodePortList, ServiceList)
+		}
+		//NodePortsList.nodePortList = append(NodePortsList.nodePortList, ServiceList)
+	}
+
+	return NodePortsList, nil
+
+}
+
+func main() {
+	//nodeportlist := NodePortsList{}
+	client, err := GetClient("token")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
+	ns, err := GetNameSpaces(client, "token")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+	fmt.Println(ns)
+	fmt.Println("===========================")
+	nodeports, err := GetNodePort(client, ns)
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+	fmt.Println(nodeports)
+}

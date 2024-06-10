@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.title}}</title>
+    <link rel="icon" href="/templates/icon/n-icon.jpeg" type="image/jpg" />
+    <link rel="stylesheet" href="/templates/css/bootstrap.min.css">
+    <style>
+        .card-service {
+            margin-bottom: 1rem;
+        }
+        body {
+            background-color: #192231;
+            color:#fff;
+        }
+        .card {
+            background-color: #98878F;
+            box-shadow: 5px 5px 5px rgba(0,0,0,0.5);
+        }
+        .card-header {
+            background-color: #E14658;
+            color:#fff;
+        }
+        
+        .service-card-group {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .service-card {
+            background-color: #494E68;
+            /* 设置一个合适的宽度比例，例如30%左右，具体根据实际需求调整 */
+            flex-basis: 30%;
+            /* 为了更好的响应式，可以设置最小宽度 */
+            min-width: calc(33.33% - 20px); /* 考虑到内外边距可能需要调整 */
+            margin: 10px; /* 根据需要调整外边距 */
+            box-sizing: border-box;
+            color:#fff;
+        }
+
+        .service-card .card-title {
+        /* background-color:#E14658; /* 示例颜色，您可以替换为您想要的颜色值 */
+        color: #fff; /* 可选：为了确保文字与背景色对比度良好，可能需要调整文字颜色 */
+        padding: 5px 10px; /* 可选：增加内边距使背景色区域更明显 */
+    }
+
+        /* 确保在小屏幕上也能自适应 */
+        @media (max-width: 767px) {
+            .service-card {
+                /* 在小屏幕上可以全宽显示 */
+                flex-basis: 100%;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="text-center mb-5">{{.title}}</h1>
+
+    {{if .Error}}
+        <div class="alert alert-danger" role="alert">
+            Error: {{.Error}}
+        </div>
+    {{end}}
+
+    {{range $servicelist := .NodePorts.NodePortList}}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">{{$servicelist.Namespace}}</h5>
+            </div>
+            <div class="card-body service-card-group">
+                {{range $service := $servicelist.Service}}
+                    <div class="card service-card">
+                        <div class="card-body">
+                            <h6 class="card-title">{{$service.ServiceName}}</h6>
+                            <p class="card-text">
+                                {{range $port := $service.ServicePort}}
+                                    {{$port}}
+                                {{end}}
+                            </p>
+                        </div>
+                    </div>
+                {{end}}
+            </div>
+        </div>
+    {{end}}
+
+    <script src="/templates/js/jquery.slim.min.js"></script>
+    <script src="/templates/js/popper.min.js"></script>
+    <script src="/templates/js/bootstrap.min.js"></script>
+</body>
+</html>
