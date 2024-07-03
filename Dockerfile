@@ -1,4 +1,4 @@
-FROM  debian:buster
+FROM  alpine
 ENV CLUSTER_NAME=""
 RUN mkdir -p /app/  && touch /app/k8s.yaml
 ADD NodePortList /app
